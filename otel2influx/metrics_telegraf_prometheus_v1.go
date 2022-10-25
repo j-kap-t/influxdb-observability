@@ -99,9 +99,10 @@ func (c *metricWriterTelegrafPrometheusV1) writeGauge(ctx context.Context, resou
 }
 
 func (c *metricWriterTelegrafPrometheusV1) writeGaugeFromSum(ctx context.Context, resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, measurement string, sum pmetric.Sum, w InfluxWriter) error {
-	// if sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-	// 	return fmt.Errorf("unsupported sum (as gauge) aggregation temporality %q", sum.AggregationTemporality())
-	// }
+	fieldKey := common.MetricGaugeFieldKey
+	if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		fieldKey = "i" + fieldKey
+	}
 
 	for i := 0; i < sum.DataPoints().Len(); i++ {
 		dataPoint := sum.DataPoints().At(i)
@@ -114,9 +115,9 @@ func (c *metricWriterTelegrafPrometheusV1) writeGaugeFromSum(ctx context.Context
 		case pmetric.NumberDataPointValueTypeEmpty:
 			continue
 		case pmetric.NumberDataPointValueTypeDouble:
-			fields[common.MetricGaugeFieldKey] = dataPoint.DoubleValue()
+			fields[fieldKey] = dataPoint.DoubleValue()
 		case pmetric.NumberDataPointValueTypeInt:
-			fields[common.MetricGaugeFieldKey] = dataPoint.IntValue()
+			fields[fieldKey] = dataPoint.IntValue()
 		default:
 			return fmt.Errorf("unsupported sum (as gauge) data point type %d", dataPoint.ValueType())
 		}
@@ -130,9 +131,10 @@ func (c *metricWriterTelegrafPrometheusV1) writeGaugeFromSum(ctx context.Context
 }
 
 func (c *metricWriterTelegrafPrometheusV1) writeSum(ctx context.Context, resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, measurement string, sum pmetric.Sum, w InfluxWriter) error {
-	// if sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-	// 	return fmt.Errorf("unsupported sum aggregation temporality %q", sum.AggregationTemporality())
-	// }
+	fieldKey := common.MetricCounterFieldKey
+	if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		fieldKey = "i" + fieldKey
+	}
 
 	for i := 0; i < sum.DataPoints().Len(); i++ {
 		dataPoint := sum.DataPoints().At(i)
@@ -145,9 +147,9 @@ func (c *metricWriterTelegrafPrometheusV1) writeSum(ctx context.Context, resourc
 		case pmetric.NumberDataPointValueTypeEmpty:
 			continue
 		case pmetric.NumberDataPointValueTypeDouble:
-			fields[common.MetricCounterFieldKey] = dataPoint.DoubleValue()
+			fields[fieldKey] = dataPoint.DoubleValue()
 		case pmetric.NumberDataPointValueTypeInt:
-			fields[common.MetricCounterFieldKey] = dataPoint.IntValue()
+			fields[fieldKey] = dataPoint.IntValue()
 		default:
 			return fmt.Errorf("unsupported sum data point type %d", dataPoint.ValueType())
 		}
